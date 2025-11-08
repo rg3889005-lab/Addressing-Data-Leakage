@@ -1,0 +1,700 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Audit Console: Data Integrity Check</title>
+    <!-- We will use Font Awesome for new icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* New Dark Mode & Console Theme */
+        body {
+            font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+            background-color: #111827; /* Dark Slate Background */
+            color: #E5E7EB; /* Light Gray Text */
+            margin: 0;
+            padding: 0;
+        }
+
+        .container-main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 16px;
+        }
+
+        /* --- Global Styles --- */
+        .console-box {
+            background-color: #1F2937; /* Slightly lighter dark background */
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        .console-title {
+            color: #4CAF50; /* Lime Green for titles */
+            font-size: 2.25rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .console-subtitle {
+            color: #9CA3AF;
+            font-size: 1.125rem;
+            margin-bottom: 40px;
+        }
+
+        /* --- Login/Inputs --- */
+        .login-page {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #111827;
+        }
+
+        .login-box {
+            background-color: #1F2937;
+            border: 2px solid #6366F1; /* Violet border glow effect */
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+            padding: 40px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .console-input, .console-textarea {
+            width: 100%;
+            border: 1px solid #4B5563;
+            background-color: #374151;
+            color: #D1D5DB;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .console-input:focus, .console-textarea:focus {
+            border-color: #34D399; /* Focus with Lime Green */
+            box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.5);
+        }
+
+        .console-button {
+            width: 100%;
+            padding: 10px 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: background-color 0.3s, opacity 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: #6366F1; /* Violet */
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #4F46E5;
+        }
+
+        .btn-send {
+            background-color: #34D399; /* Lime Green */
+            color: #111827;
+            flex-grow: 0;
+            width: auto;
+        }
+
+        .btn-send:hover {
+            background-color: #10B981;
+        }
+
+        .btn-logout {
+            background-color: #EF4444; /* Red */
+            color: white;
+            padding: 8px 16px;
+            width: auto;
+            font-size: 0.875rem;
+        }
+
+        .btn-logout:hover {
+            background-color: #DC2626;
+        }
+
+        /* --- Prevention Strategies --- */
+        .strategy-card {
+            background-color: #1F2937;
+            border: 1px solid #374151;
+            border-left: 5px solid; /* Dynamic color based on section */
+            border-radius: 8px;
+            padding: 24px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-5px);
+            border-color: #34D399;
+            box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-policy { background-color: rgba(251, 191, 36, 0.1); color: #FBBF24; } /* Amber */
+        .icon-technology { background-color: rgba(99, 102, 241, 0.1); color: #6366F1; } /* Violet */
+        .icon-people { background-color: rgba(52, 211, 153, 0.1); color: #34D399; } /* Lime Green */
+
+        /* --- Collaboration Hub / Scan Results --- */
+        .results-box {
+            min-height: 100px;
+            padding: 16px;
+            background-color: #171717;
+            border: 1px dashed #374151;
+            border-radius: 4px;
+            overflow-y: auto;
+        }
+
+        .risk-critical { color: #EF4444; font-weight: bold; } /* Red */
+        .risk-high { color: #FBBF24; font-weight: bold; } /* Amber */
+
+        .code-snippet {
+            background-color: #374151;
+            color: #FFC107; /* Yellow for code */
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        /* --- Chat Log --- */
+        .chat-log {
+            height: 250px;
+            background-color: #171717;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+            border-left: 2px solid #34D399;
+            padding-left: 8px;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .chat-user { color: #34D399; font-weight: bold; }
+        .chat-timestamp { color: #6B7280; font-size: 0.75rem; }
+
+        /* --- Admin Panel --- */
+        .admin-history-header {
+            cursor: pointer;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #374151;
+            background-color: #1F2937;
+        }
+        .admin-history-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+            background-color: #171717;
+            padding: 0 12px;
+        }
+        .admin-history-item.open .admin-history-content {
+            max-height: 1000px;
+            padding: 12px;
+        }
+        .admin-history-item.open .chevron {
+            transform: rotate(180deg);
+        }
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+        .admin-table th, .admin-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #374151;
+        }
+        .admin-table th {
+            background-color: #374151;
+            color: #D1D5DB;
+        }
+
+        /* --- Utilities (Minimal Flex/Grid) --- */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-8 { gap: 32px; }
+        .gap-4 { gap: 16px; }
+        .mt-4 { margin-top: 16px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mb-8 { margin-bottom: 32px; }
+        .p-4 { padding: 16px; }
+        .pt-10 { padding-top: 40px; }
+        .border-t { border-top: 1px solid #374151; }
+        .text-center { text-align: center; }
+        .w-full { width: 100%; }
+        .flex-grow { flex-grow: 1; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Login Page - Completely Redesigned -->
+    <div id="login-page" class="login-page">
+        <div class="login-box">
+            <h2 class="console-title text-center" style="font-size: 2rem;">ACCESS TERMINAL</h2>
+            <p class="text-center" style="color: #9CA3AF; margin-bottom: 24px;">Data Integrity Console Login</p>
+            <form id="login-form">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <input type="text" id="username" placeholder="Auditor ID" class="console-input" required>
+                    <input type="password" id="password" placeholder="Passkey (Admin: admin123)" class="console-input">
+                </div>
+                <button type="submit" class="console-button btn-primary mt-4 w-full">AUTHENTICATE</button>
+                <p id="login-error" class="risk-critical text-center mt-4" style="height: 16px;"></p>
+                <p class="text-center" style="color: #4B5563; font-size: 0.75rem; margin-top: 16px;">Hint: Use 'admin' & 'admin123' for full access, or any other ID for standard access.</p>
+            </form>
+        </div>
+    </div>
+
+    <main class="container-main hidden">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="flex justify-between items-center">
+                 <div id="welcome-message" style="color: #9CA3AF; font-size: 0.875rem;"></div>
+                <h1 class="console-title" style="font-size: 3rem; color: #34D399;">SYSTEM AUDIT CONSOLE</h1>
+                <div class="flex justify-end">
+                    <button id="logout-button" class="console-button btn-logout">LOGOUT</button>
+                </div>
+            </div>
+            <p class="console-subtitle">Interactive platform for real-time risk simulation and strategic guidance.</p>
+        </header>
+
+        <!-- Admin Panel - Styled for Dark Mode -->
+        <section id="admin-panel" class="mb-8 console-box hidden" style="border-left: 5px solid #EF4444;">
+            <h2 style="font-size: 1.5rem; color: #EF4444; font-weight: bold; margin-bottom: 24px;">>> AUDITOR ACCESS OVERVIEW</h2>
+            <div class="flex gap-8">
+                <div style="flex-basis: 35%;">
+                    <h3 style="font-size: 1.25rem; color: #D1D5DB; margin-bottom: 12px;">Active Sessions</h3>
+                    <div style="height: 384px; overflow-y: auto; border: 1px solid #374151;">
+                        <table class="admin-table" style="width: 100%; text-align: left; font-size: 0.875rem; color: #E5E7EB; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th>Auditor ID</th>
+                                    <th>Simulated UID</th>
+                                    <th>Passkey</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="flex-basis: 65%;">
+                    <h3 style="font-size: 1.25rem; color: #D1D5DB; margin-bottom: 12px;">Data History Log</h3>
+                    <div id="adminScanHistory" style="height: 384px; overflow-y: auto; background-color: #171717; border: 1px solid #374151; border-radius: 6px;">
+                         <div class="text-center p-4" style="color: #6B7280;">Awaiting scan activity...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Collaboration Hub Section - New Layout/Theme -->
+        <section id="collaboration-hub" class="mb-8">
+            <h2 class="console-title text-center" style="color: #D1D5DB; font-size: 2rem;">LIVE DETECTION & COLLABORATION</h2>
+            <p class="text-center" style="color: #9CA3AF; margin-bottom: 32px;">Paste text into the buffer below for vulnerability analysis.</p>
+
+            <div class="console-box flex flex-col gap-8">
+                <div class="flex gap-8" style="flex-basis: 60%;">
+                    <!-- Left: Scan Input/Results -->
+                    <div style="flex-basis: 50%;">
+                        <h3 style="font-size: 1.25rem; color: #6366F1; margin-bottom: 12px;">1. DATA INPUT BUFFER</h3>
+                        <div class="flex flex-col gap-4" style="height: 100%;">
+                            <textarea id="dataInput" class="console-textarea" style="height: 180px;" placeholder="Paste text here for integrity check..."></textarea>
+                            <button id="scanButton" class="console-button btn-primary w-full">INITIATE RISK SCAN</button>
+                        </div>
+                    </div>
+                    <!-- Right: Analysis Chart -->
+                    <div style="flex-basis: 50%; display: flex; flex-direction: column;">
+                        <h3 style="font-size: 1.25rem; color: #6366F1; margin-bottom: 12px;">2. RISK ANALYSIS VISUAL</h3>
+                         <div style="background-color: #1F2937; border: 1px solid #374151; padding: 16px; border-radius: 6px; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                            <div style="position: relative; height: 200px; width: 100%; max-width: 250px;">
+                                <canvas id="scanComparisonChart"></canvas>
+                                <p class="text-center" style="font-size: 0.875rem; color: #9CA3AF; margin-top: 10px;">Vulnerabilities by Severity (%)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-8" style="flex-basis: 40%;">
+                    <!-- Left: Latest Scan Findings -->
+                    <div style="flex-basis: 50%;">
+                        <h3 style="font-size: 1.25rem; color: #34D399; margin-bottom: 12px;">3. LATEST SCAN FINDINGS</h3>
+                         <div id="scanResults" class="results-box" style="height: 180px; color: #9CA3AF;">Awaiting first risk scan...</div>
+                    </div>
+                    <!-- Right: Team Chat -->
+                    <div style="flex-basis: 50%;">
+                        <h3 style="font-size: 1.25rem; color: #34D399; margin-bottom: 12px;">4. TEAM COMMUNICATION</h3>
+                        <div id="chatLog" class="chat-log"></div>
+                        <div class="mt-4 flex gap-4">
+                            <input type="text" id="chatMessage" placeholder="Transmit message..." class="console-input flex-grow">
+                            <button id="sendMessage" class="console-button btn-send">SEND</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Prevention Strategies Section - New Content/Theme -->
+        <section id="prevention-strategies" class="pt-10 border-t">
+            <h2 class="console-title text-center" style="color: #D1D5DB; font-size: 2rem; margin-bottom: 8px;">STRATEGIC DEFENSE MODULES</h2>
+            <p class="text-center" style="color: #9CA3AF; margin-bottom: 32px;">Implementing controls across the core defense triad: Governance, Infrastructure, and Personnel.</p>
+            <div class="flex gap-8" style="display: grid; grid-template-columns: repeat(3, 1fr);">
+                <!-- Governance Card (Policy) -->
+                <div class="strategy-card" style="border-left-color: #FBBF24;">
+                    <div class="flex items-center mb-4">
+                        <div class="card-icon icon-policy"><i class="fas fa-gavel fa-lg"></i></div>
+                        <h3 style="font-size: 1.25rem; color: #E5E7EB; font-weight: bold; margin-left: 16px;">GOVERNANCE PROTOCOLS</h3>
+                    </div>
+                    <ul style="list-style: none; padding-left: 0; margin-top: 20px; font-size: 0.9rem;">
+                        <li style="margin-bottom: 12px;"><strong style="color: #FBBF24;">Information Tiers:</strong> Formally structure and categorize data sensitivity levels (Public, Restricted, Sensitive).</li>
+                        <li style="margin-bottom: 12px;"><strong style="color: #FBBF24;">Access Minimization:</strong> Enforce the principle of **Least Privilege**. Grant users the absolute minimum required permissions.</li>
+                        <li style="margin-bottom: 12px;"><strong style="color: #FBBF24;">Usage Agreement:</strong> Clearly articulate the permitted and prohibited methods for handling and transmitting organizational data.</li>
+                    </ul>
+                </div>
+                <!-- Infrastructure Card (Technology) -->
+                <div class="strategy-card" style="border-left-color: #6366F1;">
+                     <div class="flex items-center mb-4">
+                        <div class="card-icon icon-technology"><i class="fas fa-server fa-lg"></i></div>
+                        <h3 style="font-size: 1.25rem; color: #E5E7EB; font-weight: bold; margin-left: 16px;">INFRASTRUCTURE TOOLS</h3>
+                    </div>
+                    <ul style="list-style: none; padding-left: 0; margin-top: 20px; font-size: 0.9rem;">
+                        <li style="margin-bottom: 12px;"><strong style="color: #6366F1;">Leak Prevention Systems:</strong> Utilize software to monitor, detect, and halt unauthorized transmission of sensitive data.</li>
+                        <li style="margin-bottom: 12px;"><strong style="color: #6366F1;">Configuration Audits:</strong> Employ Cloud Security Posture Management (CSPM) to continually check for system misconfigurations.</li>
+                        <li style="margin-bottom: 12px;"><strong style="color: #6366F1;">Identity Hardening:</strong> Mandate **Multi-Factor Authentication (MFA)** for all system access points to secure identities.</li>
+                    </ul>
+                </div>
+                <!-- Personnel Card (People) -->
+                <div class="strategy-card" style="border-left-color: #34D399;">
+                    <div class="flex items-center mb-4">
+                        <div class="card-icon icon-people"><i class="fas fa-user-shield fa-lg"></i></div>
+                        <h3 style="font-size: 1.25rem; color: #E5E7EB; font-weight: bold; margin-left: 16px;">PERSONNEL TRAINING</h3>
+                    </div>
+                    <ul style="list-style: none; padding-left: 0; margin-top: 20px; font-size: 0.9rem;">
+                         <li style="margin-bottom: 12px;"><strong style="color: #34D399;">Security Fluency:</strong> Run mandatory, periodic training sessions focused on secure data handling protocols and incident awareness.</li>
+                         <li style="margin-bottom: 12px;"><strong style="color: #34D399;">Social Engineering Tests:</strong> Conduct internal phishing simulations to gauge and strengthen employee vigilance.</li>
+                         <li style="margin-bottom: 12px;"><strong style="color: #34D399;">Incident Reporting:</strong> Implement transparent and straightforward mechanisms for employees to safely report suspected security events.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CORE FUNCTIONAL LOGIC (Identical to Original) ---
+            
+            // State Management Variables
+            let sessionData = {
+                users: {},
+                chatMessages: []
+            };
+            let currentUser = ''; // 'Admin' or other username
+            let currentUsername = ''; // 'admin' or other username
+            let loggedInUsers = []; // For display purposes only
+
+            // DOM Elements
+            const loginPage = document.getElementById('login-page');
+            const loginForm = document.getElementById('login-form');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginError = document.getElementById('login-error');
+            const mainContent = document.querySelector('main');
+            const welcomeMessage = document.getElementById('welcome-message');
+            const logoutButton = document.getElementById('logout-button');
+            const adminPanel = document.getElementById('admin-panel');
+            const userList = document.getElementById('user-list');
+            const adminScanHistory = document.getElementById('adminScanHistory');
+            const dataInput = document.getElementById('dataInput');
+            const scanButton = document.getElementById('scanButton');
+            const scanResults = document.getElementById('scanResults');
+            const chatLog = document.getElementById('chatLog');
+            const chatMessageInput = document.getElementById('chatMessage');
+            const sendMessageButton = document.getElementById('sendMessage');
+            
+            // Chart instance holder
+            let scanComparisonChart;
+
+            // --- 1. Login Logic ---
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+
+                if (username === 'admin' && password === 'admin123') {
+                    currentUser = 'Administrator'; // Changed display name
+                    currentUsername = 'admin';
+                    loginSuccess(currentUsername, password);
+                } else if (username) {
+                    currentUser = username;
+                    currentUsername = username;
+                    loginSuccess(currentUsername, 'N/A');
+                } else {
+                    loginError.textContent = '>> Authentication failure: Auditor ID required.';
+                }
+            });
+
+            function loginSuccess(username, password) {
+                if (!loggedInUsers.find(u => u.username === username)) {
+                    loggedInUsers.push({ username });
+                }
+                if (!sessionData.users[username]) {
+                    sessionData.users[username] = { 
+                        scanHistory: [],
+                        // Must generate a unique ID as per original function
+                        userId: 'UID_' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                        password: password
+                    };
+                }
+
+                loginError.textContent = '';
+                loginPage.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                welcomeMessage.innerHTML = `STATUS: <strong style="color: #34D399;">ONLINE</strong> | USER: <strong style="color: #E5E7EB;">${currentUser}</strong>`;
+                
+                if (currentUsername === 'admin') {
+                    adminPanel.classList.remove('hidden');
+                }
+
+                initializeCharts();
+                setupEventListeners();
+                renderUserScanResults();
+                renderChat();
+                renderAdminPanel();
+            }
+            
+            logoutButton.addEventListener('click', () => {
+                const userIndex = loggedInUsers.findIndex(u => u.username === currentUsername);
+                if (userIndex > -1) {
+                    loggedInUsers.splice(userIndex, 1);
+                }
+
+                currentUser = '';
+                currentUsername = '';
+                mainContent.classList.add('hidden');
+                adminPanel.classList.add('hidden');
+                loginPage.classList.remove('hidden');
+                usernameInput.value = '';
+                passwordInput.value = '';
+                renderAdminPanel();
+            });
+
+            // --- 2. Admin Panel Rendering (Updated to new styles) ---
+            function renderAdminPanel() {
+                // Render User List
+                userList.innerHTML = loggedInUsers.map(user => {
+                    const userData = sessionData.users[user.username];
+                    if (!userData) return '';
+                    return `<tr style="background-color: #1F2937;">
+                                <td class="px-6 py-4 font-medium" style="color: #D1D5DB;">${user.username}</td>
+                                <td class="px-6 py-4" style="color: #9CA3AF;">${userData.userId}</td>
+                                <td class="px-6 py-4" style="color: #34D399;">${userData.password}</td>
+                            </tr>`;
+                }).join('') || '<tr><td colspan="3" class="text-center p-4" style="color: #6B7280;">NO ACTIVE SESSIONS.</td></tr>';
+
+                // Render All Scan Histories (Accordion Style)
+                let historyHtml = '';
+                Object.keys(sessionData.users).forEach(username => {
+                    const user = sessionData.users[username];
+                    if (user.scanHistory.length > 0) {
+                        historyHtml += `<div class="admin-history-item" style="border-bottom: 1px solid #374151;">
+                            <div class="admin-history-header" onclick="this.parentElement.classList.toggle('open')">
+                                <h4 style="font-weight: bold; color: #6366F1;">AUDITOR: ${username} (${user.scanHistory.length} LOGS)</h4>
+                                <i class="fas fa-chevron-down chevron" style="color: #9CA3AF;"></i>
+                            </div>
+                            <div class="admin-history-content">
+                                ${user.scanHistory.map((scan, index) => {
+                                    let findingsHtml = scan.findings.length > 0 ? scan.findings.map(f => {
+                                        const riskClass = f.risk === 'Critical' ? 'risk-critical' : 'risk-high';
+                                        return `<li style="font-size: 0.8rem;"><span class="${riskClass}">[${f.risk}]</span> ${f.name} FOUND: <span class="code-snippet">${f.found}</span></li>`;
+                                    }).join('') : '<li style="color: #34D399; font-size: 0.8rem;">CLEAN: No critical patterns detected.</li>';
+                                    return `<div style="padding: 10px; border-bottom: 1px dashed #374151;">
+                                        <p style="font-weight: bold; color: #9CA3AF; font-size: 0.75rem;">LOG #${index + 1} @ ${scan.timestamp.toLocaleTimeString()}</p>
+                                        <ul style="list-style: none; padding-left: 0; margin-top: 5px; margin-bottom: 0; display: flex; flex-direction: column; gap: 4px;">${findingsHtml}</ul>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
+                    }
+                });
+                adminScanHistory.innerHTML = historyHtml || '<div class="text-center p-4" style="color: #6B7280;">NO AUDIT LOGS AVAILABLE.</div>';
+                
+                // Note: Click event handler moved to inline `onclick` for simplicity in single-file HTML.
+            }
+            
+            function initializeCharts(){
+                if (scanComparisonChart) scanComparisonChart.destroy();
+                const sccCtx = document.getElementById('scanComparisonChart').getContext('2d');
+                scanComparisonChart = new Chart(sccCtx, {
+                    type: 'doughnut',
+                    data: { 
+                        labels: ['Critical', 'High'], 
+                        datasets: [{ 
+                            data: [0, 0], 
+                            // New chart colors for dark theme
+                            backgroundColor: ['#EF4444', '#FBBF24'], 
+                            borderColor: '#1F2937', // Inner dark border
+                            borderWidth: 4
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '70%', // Slightly larger hole
+                        plugins: { 
+                            legend: { 
+                                position: 'bottom',
+                                labels: {
+                                    color: '#E5E7EB', // White legend text
+                                    font: { family: 'Menlo' }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                            const value = context.parsed;
+                                            const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                                            label += percentage + '% (' + value + ')';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function setupEventListeners() {
+                scanButton.addEventListener('click', handleScan);
+                sendMessageButton.addEventListener('click', addChatMessage);
+                chatMessageInput.addEventListener('keydown', e => { if (e.key === 'Enter') addChatMessage(); });
+            }
+
+            // --- 3. Leak Detection Patterns (COPIED EXACTLY) ---
+            const leakPatterns = [
+                { name: "API Key", regex: /sk-[a-zA-Z0-9]{30,}/g, risk: "Critical", category: "Credentials" },
+                { name: "Email Address", regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, risk: "High", category: "PII" },
+                { name: "Credit Card Number", regex: /\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b/g, risk: "Critical", category: "PII" },
+                { name: "Internal Memo Keyword", regex: /CONFIDENTIAL INTERNAL MEMO/ig, risk: "High", category: "Confidential" },
+                { name: "SSN (US Social Security Number)", regex: /\b\d{3}-\d{2}-\d{4}\b/g, risk: "Critical", category: "PII" },
+                { name: "Insecure Link / DB Link", regex: /https?:\/\/[^\s]*(\.sql|\.env|\.bak)|http:\/\/[^\s]+/g, risk: "High", category: "Confidential" }
+            ];
+
+            function handleScan() {
+                const textToScan = dataInput.value;
+                if (!textToScan.trim()) {
+                    scanResults.innerHTML = '<p class="risk-high">>> ERROR: Input buffer is empty. Please provide data to scan.</p>';
+                    return;
+                }
+                let findings = [];
+                let riskCounts = { Critical: 0, High: 0 };
+                
+                // CORE LOGIC: Find matches and count risks
+                leakPatterns.forEach(pattern => {
+                    const matches = textToScan.matchAll(pattern.regex);
+                    for (const match of matches) {
+                        findings.push({ name: pattern.name, risk: pattern.risk, found: match[0] });
+                        riskCounts[pattern.risk]++;
+                    }
+                });
+                
+                // Save to user's history
+                sessionData.users[currentUsername].scanHistory.push({
+                    timestamp: new Date(),
+                    findings: findings,
+                    source: 'Pasted Text'
+                });
+
+                renderUserScanResults();
+                if(currentUsername === 'admin') renderAdminPanel();
+
+                // Update Risk Percentage Chart
+                scanComparisonChart.data.datasets[0].data = [riskCounts.Critical, riskCounts.High];
+                scanComparisonChart.update();
+
+                dataInput.value = ''; // Clear input after scan
+            }
+            
+            // --- 4. Result and Chat Rendering (Updated to new styles) ---
+            function renderUserScanResults() {
+                const userHistory = sessionData.users[currentUsername].scanHistory;
+                if (userHistory.length === 0) {
+                    scanResults.innerHTML = '<p style="color: #9CA3AF;">Awaiting first risk scan...</p>';
+                    return;
+                }
+                const latestScan = userHistory[userHistory.length - 1];
+                if (latestScan.findings.length > 0) {
+                    scanResults.innerHTML = latestScan.findings.map(f => {
+                        const riskClass = f.risk === 'Critical' ? 'risk-critical' : 'risk-high';
+                        return `<div style="margin-bottom: 8px;"><span class="${riskClass}">[${f.risk} ALERT]</span> ${f.name} detected: <span class="code-snippet">${f.found}</span></div>`;
+                    }).join('');
+                } else {
+                    scanResults.innerHTML = '<p style="color: #34D399; font-weight: bold;">[CLEAN SCAN] No sensitive patterns detected in this buffer.</p>';
+                }
+            }
+
+            function addChatMessage() {
+                const message = chatMessageInput.value.trim();
+                if (message === '') return;
+                const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                // CORE LOGIC: Push to shared chatMessages array
+                sessionData.chatMessages.push({ user: currentUser, message, timestamp });
+                chatMessageInput.value = '';
+                renderChat();
+                if(currentUsername === 'admin') renderAdminPanel();
+            }
+
+            function renderChat() {
+                if (sessionData.chatMessages.length === 0) {
+                    chatLog.innerHTML = '<div class="text-center" style="color: #6B7280; margin-top: 10px;">SYSTEM: Chat initialized. Begin transmission.</div>';
+                } else {
+                    chatLog.innerHTML = sessionData.chatMessages.map(msg => {
+                        return `<div class="chat-message"><p style="margin: 0; font-size: 0.875rem;"><strong class="chat-user">${msg.user}</strong> <span class="chat-timestamp">${msg.timestamp}</span></p><p style="margin: 0; color: #D1D5DB;">${msg.message}</p></div>`;
+                    }).join('');
+                }
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }
+            
+            // Initial Chart Setup (for when the app loads without login)
+            if (document.getElementById('scanComparisonChart')) {
+                initializeCharts();
+            }
+        });
+    </script>
+</body>
+</html>
